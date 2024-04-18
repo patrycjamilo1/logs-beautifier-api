@@ -1,14 +1,29 @@
-import express from 'express';
-import { port } from './config/index.js';
+const express = require('express');
+const mongoose = require('mongoose');
+const { port, dbURI } = require('./config/config');
+const logsModel = require('./db/models/logs.model');
 
-const server = express();
+const app = express();
 
-server.listen(port, err => {
-    if (err) {
-      console.log(err);
-      return process.exit(1);
-    }
-    console.log(`Server is running on ${port}`);
-  });
-  
-  export default server
+// Database connection
+mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('Connected to database');
+  })
+  .catch(err => console.error('Database connection error:', err));
+
+// Endpoint GET /logs
+app.get('/logs', async (req, res) => {
+  try {
+    const logs = await logsModel.find({ "level": "info" });
+    res.json(logs);
+  } catch (err) {
+    console.error('Error fetching logs:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Start HTTP server
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
