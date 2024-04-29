@@ -2,9 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { port, dbURI } = require('./config/config');
 const logsModel = require('./db/models/logs.model');
+var cors = require('cors')
 
 const app = express();
-
+app.use(cors())
+console.log('URI: ', dbURI)
 // Database connection
 mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
@@ -41,18 +43,12 @@ app.get('/logs', async (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 20;
     const skip = (page - 1) * limit;
 
-    console.log('Received query params:', req.query);
-    console.log('Generated filter:', filter);
-    console.log('Pagination settings - page:', page, 'limit:', limit);
-
+    const total = await logsModel.countDocuments(filter);
     const logs = await logsModel.find(filter)
-                                 .skip(skip)
-                                 .limit(limit);
+      .skip(skip)
+      .limit(limit);
 
-    console.log('Filtered logs count:', logs.length);
-    console.log('Filtered logs:', logs);
-
-    res.json(logs);
+    res.json({ data: { logs }, page, skip, limit, total });
   } catch (err) {
     console.error('Error fetching logs:', err);
     res.status(500).json({ error: 'Internal Server Error' });
