@@ -6,7 +6,6 @@ var cors = require('cors')
 
 const app = express();
 app.use(cors())
-console.log('URI: ', dbURI)
 // Database connection
 mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
@@ -21,10 +20,10 @@ app.get('/logs', async (req, res) => {
 
     // Filtering parameters
     if (req.query.level) {
-      filter.level = req.query.level;
+      filter.level = req.query.level.toLowerCase();
     }
     if (req.query.type) {
-      filter.type = req.query.type;
+      filter.type = req.query.type.toLowerCase();
     }
     if (req.query.message) {
       filter.message = { $regex: new RegExp(req.query.message, 'i') };
@@ -43,12 +42,13 @@ app.get('/logs', async (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 20;
     const skip = (page - 1) * limit;
 
-    const total = await logsModel.countDocuments(filter);
+    const totalRows = await logsModel.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
     const logs = await logsModel.find(filter)
       .skip(skip)
       .limit(limit);
 
-    res.json({ data: { logs }, page, skip, limit, total });
+    res.json({ data: { logs }, page, skip, limit, total: totalRows, totalPages });
   } catch (err) {
     console.error('Error fetching logs:', err);
     res.status(500).json({ error: 'Internal Server Error' });
