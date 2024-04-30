@@ -1,11 +1,44 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const { port, dbURI } = require('./config/config');
-const logsModel = require('./db/models/logs.model');
-var cors = require('cors')
+const cors = require('cors');
+const swaggerJsdoc = require("swagger-jsdoc");
+const swaggerUi = require("swagger-ui-express");
+const logsRoutes = require('./routes/logs');
 
 const app = express();
 app.use(cors())
+
+// Swagger config
+// const options = {
+//   definition: {
+//     openapi: "3.1.0",
+//     info: {
+//       title: "Logs Beautifier API",
+//       version: "1.0.0",
+//       description:
+//         "This is a Logs Viewing application made with Express and documented with Swagger",
+//       license: {
+//         name: "MIT",
+//         url: "https://spdx.org/licenses/MIT.html",
+//       },
+//     },
+//     servers: [
+//       {
+//         url: `http://localhost:${port}`,
+//       },
+//     ],
+//   },
+//   apis: ['**/*.js'],
+// };
+
+// const specs = swaggerJsdoc(options);
+
+// app.use(
+//   "/swagger",
+//   swaggerUi.serve,
+//   swaggerUi.setup(specs)
+// );
 // Database connection
 mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
@@ -13,47 +46,9 @@ mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
   })
   .catch(err => console.error('Database connection error:', err));
 
-// Endpoint GET /logs
-app.get('/logs', async (req, res) => {
-  try {
-    let filter = {};
+// Register routes
+app.use('/logs', logsRoutes);
 
-    // Filtering parameters
-    if (req.query.level) {
-      filter.level = req.query.level.toLowerCase();
-    }
-    if (req.query.type) {
-      filter.type = req.query.type.toLowerCase();
-    }
-    if (req.query.message) {
-      filter.message = { $regex: new RegExp(req.query.message, 'i') };
-    }
-    if (req.query.startDate) {
-      const startDate = new Date(req.query.startDate + 'T00:00:00.000Z');
-      filter.createdAt = { $gte: startDate };
-    }
-    if (req.query.endDate) {
-      const endDate = new Date(req.query.endDate + 'T23:59:59.999Z');
-      filter.createdAt = { ...filter.createdAt, $lte: endDate };
-    }
-
-    // Pagination
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 20;
-    const skip = (page - 1) * limit;
-
-    const totalRows = await logsModel.countDocuments(filter);
-    const totalPages = Math.ceil(total / limit);
-    const logs = await logsModel.find(filter)
-      .skip(skip)
-      .limit(limit);
-
-    res.json({ data: { logs }, page, skip, limit, total: totalRows, totalPages });
-  } catch (err) {
-    console.error('Error fetching logs:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
 
 // Start HTTP server
 app.listen(port, () => {
