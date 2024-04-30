@@ -4,7 +4,7 @@ const { port, dbURI } = require('./config/config');
 const cors = require('cors');
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
-const logsRoutes = require('./routes/logs');
+const logsRoutes = require('./routes/logs.routes');
 
 const app = express();
 app.use(cors())

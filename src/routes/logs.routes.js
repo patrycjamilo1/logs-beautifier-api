@@ -1,6 +1,6 @@
 const express = require('express');
-const logsModel = require('../db/models/logs.model');
 const router = express.Router();
+const LogsService = require('../services/logs.service');
 
 router.get('/', async (req, res) => {
     try {
@@ -30,13 +30,9 @@ router.get('/', async (req, res) => {
         const limit = parseInt(req.query.limit, 10) || 20;
         const skip = (page - 1) * limit;
     
-        const totalRows = await logsModel.countDocuments(filter);
-        const totalPages = Math.ceil(totalRows / limit);
-        const logs = await logsModel.find(filter)
-          .skip(skip)
-          .limit(limit);
+       const { logs, totalPages, totalRows } = await LogsService.getLogs(limit, skip, filter);
     
-        res.json({ data: { logs }, page, skip, limit, total: totalRows, totalPages });
+        res.json({ data: { logs }, page, limit, totalRows, totalPages });
       } catch (err) {
         console.error('Error fetching logs:', err);
         res.status(500).json({ error: 'Internal Server Error' });
